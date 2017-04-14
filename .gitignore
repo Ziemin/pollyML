@@ -1,0 +1,8 @@
+*.swp
+*.tar
+*.zip
+*.rar
+*.x
+*.o
+.tags
+compile_commands.json
