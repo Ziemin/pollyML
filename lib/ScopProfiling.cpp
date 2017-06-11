@@ -12,9 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "pollyML/ScopProfiling.h"
+#include "pollyML/ProfilingCodegen.h"
 #include "polly/DependenceInfo.h"
 #include "polly/ScopInfo.h"
-#include "pollyML/ProfilingCodegen.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/Format.h"

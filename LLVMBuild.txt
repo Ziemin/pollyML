@@ -19,3 +19,4 @@
 type = Tool
 name = pollyML
 parent = Tools
+required_libraries = Core IRReader

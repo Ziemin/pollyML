@@ -4,10 +4,10 @@ add_library(PollyML
   RegisterPasses.cpp
   ProfilingCodegen.cpp)
 
-#target_link_libraries(PollyML
-    #LLVMSupport
-    #LLVMCore
-    #Polly)
+target_link_libraries(PollyML
+    LLVMSupport
+    LLVMCore
+    Polly)
 
 add_library(LLVMPollyML MODULE
   PollyML.cpp)
