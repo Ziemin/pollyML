@@ -12,10 +12,24 @@
 //
 //===----------------------------------------------------------------------===//
 
+/// Start profiling of the program
+///
+/// @return pointer to a context handle of particular execution
 extern "C" void* init_profiling();
 
-extern "C" void start_scop(void* context);
+/// Start timers for the given SCOP.
+///
+/// @param context  The pointer to a context handle of particular execution
+/// @param region_name  The name of the region being profiled
+extern "C" void start_scop(void* context, char* region_name);
 
-extern "C" void stop_scop(void* context);
+/// Stop timers for the given SCOP.
+///
+/// @param context      The pointer to a context handle of particular execution
+/// @param region_name  The name of the region being profiled
+extern "C" void stop_scop(void* context, char* region_name);
 
-extern "C" void finalize(void* context);
+/// Stop the profiler. This should result in saving profiling results.
+///
+/// @param context  The pointer to a context handle of particular execution
+extern "C" void finish_profiling(void* context);

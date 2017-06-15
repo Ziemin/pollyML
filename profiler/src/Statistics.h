@@ -27,11 +27,11 @@ private;
   using timepoints_t = hana::tuple<Timers::timepoint_t...>;
 
   hana::tuple<Timers...> timers;
-  std::map<std::string, durations_t> durations;
+  std::map<std::string, std::vector<durations_t>> durations;
 
 public:
 
-  void startProfilng(std::string region) {
+  void startProfiling(std::string region) {
 
   }
 

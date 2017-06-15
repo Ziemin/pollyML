@@ -15,9 +15,13 @@
 #include "pollyML/ProfilingCodegen.h"
 #include "polly/DependenceInfo.h"
 #include "polly/ScopInfo.h"
+#include "polly/Support/ScopHelper.h"
+#include "polly/Support/SCEVValidator.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include <string>
 
 using namespace llvm;
@@ -61,6 +65,36 @@ void ScopProfiling::printScop(raw_ostream &OS, Scop &S) const {
   BasicBlock *ScopExit = S.getExit();
   OS << "-- Scop entry: " << ScopEntry->getName() << '\n';
   OS << "-- Scop exit: " << ScopExit->getName() << '\n';
+  OS << "SCop Parameters: ";
+  for (const llvm::SCEV* Param: S.parameters()) {
+    std::string ParameterName;
+    if (const SCEVUnknown *ValueParameter = dyn_cast<SCEVUnknown>(Param)) {
+      Value *Val = ValueParameter->getValue();
+      CallInst *Call = dyn_cast<CallInst>(Val);
+
+      if (Call && isConstCall(Call)) {
+        ParameterName = "Some call";
+        //ParameterName = getCallParamName(Call);
+      } else if (UseInstructionNames) {
+        // If this parameter references a specific Value and this value has a name
+        // we use this name as it is likely to be unique and more useful than just
+        // a number.
+        if (Val->hasName())
+          ParameterName = Val->getName();
+        else if (LoadInst *LI = dyn_cast<LoadInst>(Val)) {
+          auto *LoadOrigin = LI->getPointerOperand()->stripInBoundsOffsets();
+          if (LoadOrigin->hasName()) {
+            ParameterName += "_loaded_from_";
+            ParameterName +=
+                LI->getPointerOperand()->stripInBoundsOffsets()->getName();
+          }
+        }
+      }
+    }
+
+    OS << " - Name: " << ParameterName << " Type: \n";
+    Param->getType()->print(OS);
+  }
 }
 
 INITIALIZE_PASS_BEGIN(ScopProfiling, "pollyML-scop-profile",

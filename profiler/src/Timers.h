@@ -19,7 +19,8 @@
 //     timepoint_t;
 //     duration_t;
 //     now() -> timepoint_t;
-//     duration(timepoint_t first, timepoint_t second) -> duration_t;
 //  }
+//
+//  Timer::timepoint_t - Timer::timepoint_t -> Timer::duration_t
 //
 //===---------------------------------------------------------------------------
