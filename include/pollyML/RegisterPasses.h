@@ -22,5 +22,4 @@ class PassManagerBase;
 
 namespace pollyML {
 void initializePollyMLPasses(llvm::PassRegistry &Registry);
-void registerPollyMLPasses(llvm::legacy::PassManagerBase &PM);
 } // namespace pollyML

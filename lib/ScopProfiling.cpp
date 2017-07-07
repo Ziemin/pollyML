@@ -55,7 +55,7 @@ bool ScopProfiling::runOnScop(Scop &S) {
 
 void ScopProfiling::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<ScopInfoRegionPass>();
-  // AU.setPreservesAll();
+  AU.setPreservesAll();
 }
 
 void ScopProfiling::printScop(raw_ostream &OS, Scop &S) const {
@@ -65,36 +65,22 @@ void ScopProfiling::printScop(raw_ostream &OS, Scop &S) const {
   BasicBlock *ScopExit = S.getExit();
   OS << "-- Scop entry: " << ScopEntry->getName() << '\n';
   OS << "-- Scop exit: " << ScopExit->getName() << '\n';
-  OS << "SCop Parameters: ";
+  OS << "SCop Parameters: \n";
   for (const llvm::SCEV* Param: S.parameters()) {
     std::string ParameterName;
     if (const SCEVUnknown *ValueParameter = dyn_cast<SCEVUnknown>(Param)) {
       Value *Val = ValueParameter->getValue();
-      CallInst *Call = dyn_cast<CallInst>(Val);
-
-      if (Call && isConstCall(Call)) {
-        ParameterName = "Some call";
-        //ParameterName = getCallParamName(Call);
-      } else if (UseInstructionNames) {
-        // If this parameter references a specific Value and this value has a name
-        // we use this name as it is likely to be unique and more useful than just
-        // a number.
-        if (Val->hasName())
-          ParameterName = Val->getName();
-        else if (LoadInst *LI = dyn_cast<LoadInst>(Val)) {
-          auto *LoadOrigin = LI->getPointerOperand()->stripInBoundsOffsets();
-          if (LoadOrigin->hasName()) {
-            ParameterName += "_loaded_from_";
-            ParameterName +=
-                LI->getPointerOperand()->stripInBoundsOffsets()->getName();
-          }
-        }
-      }
+      Val->getType()->print(OS);
     }
 
-    OS << " - Name: " << ParameterName << " Type: \n";
-    Param->getType()->print(OS);
+    OS << " - Name: " << *Param << " Type: ";
+    Param->getType()->print(OS, true);
+    OS << '\n';
   }
+}
+
+Pass *pollyML::createScopProfilingPass() {
+  return new ScopProfiling();
 }
 
 INITIALIZE_PASS_BEGIN(ScopProfiling, "pollyML-scop-profile",

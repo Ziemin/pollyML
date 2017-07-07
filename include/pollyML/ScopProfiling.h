@@ -31,6 +31,8 @@ public:
   void printScop(llvm::raw_ostream &OS, polly::Scop &S) const override;
 };
 
+llvm::Pass *createScopProfilingPass();
+
 } // namespace pollyML
 
 namespace llvm {

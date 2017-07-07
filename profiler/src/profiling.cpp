@@ -17,11 +17,21 @@
 /// @return pointer to a context handle of particular execution
 extern "C" void* init_profiling();
 
+/// Returns an allocated object responsible for storing parameters values.
+extern "C" void* new_parameters();
+
+/// Adds a parameter value to parameters container
+extern "C" void add_parameter(void* parameters, const char* name, bool value);
+extern "C" void add_parameter(void* parameters, const char* name, char value);
+extern "C" void add_parameter(void* parameters, const char* name, int value);
+extern "C" void add_parameter(void* parameters, const char* name, int64_t value);
+
 /// Start timers for the given SCOP.
 ///
 /// @param context  The pointer to a context handle of particular execution
+/// @param paramters The pointer to a struct containing parameter values
 /// @param region_name  The name of the region being profiled
-extern "C" void start_scop(void* context, char* region_name);
+extern "C" void start_scop(void* context, void* parameters, char* region_name);
 
 /// Stop timers for the given SCOP.
 ///
