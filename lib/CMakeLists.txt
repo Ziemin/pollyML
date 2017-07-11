@@ -1,6 +1,7 @@
 
 add_library(PollyML
   ScopProfiling.cpp
+  ProfilingInitializer.cpp
   RegisterPasses.cpp
   ProfilingCodegen.cpp)
 

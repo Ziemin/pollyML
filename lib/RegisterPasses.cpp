@@ -15,6 +15,7 @@
 
 #include "pollyML/RegisterPasses.h"
 #include "pollyML/ScopProfiling.h"
+#include "pollyML/ProfilingInitializer.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -26,12 +27,14 @@ using namespace pollyML;
 
 namespace pollyML {
 void initializePollyMLPasses(PassRegistry &Registry) {
+  initializeProfilingInitializerPass(Registry);
   initializeScopProfilingPass(Registry);
 }
 
 static void registerPollyMLPasses(const llvm::PassManagerBuilder &Builder,
                       llvm::legacy::PassManagerBase &PM) {
 
+  PM.add(pollyML::createProfilingInitializerPass());
   PM.add(pollyML::createScopProfilingPass());
 }
 

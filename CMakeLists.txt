@@ -38,18 +38,22 @@ else ()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
 endif ()
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
-# Add Polly headers
+# Add include headers
 include_directories(
   BEFORE
   ${CMAKE_CURRENT_SOURCE_DIR}/include/
   ${POLLY_INCLUDE_DIRS}
   ${ISL_INCLUDE_DIRS})
 
+# Add path for custom modules
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 add_subdirectory(lib)
 add_subdirectory(test)
 add_subdirectory(unittests)
+add_subdirectory(profiler)
 
 # Add target to check formatting of pollyML files (Copied from Polly)
 file(GLOB_RECURSE files *.h lib/*.cpp lib/*.c tools/*.cpp tools/*.c tools/*.h unittests/*.cpp)

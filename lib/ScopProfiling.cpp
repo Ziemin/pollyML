@@ -20,6 +20,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include <string>
@@ -28,9 +29,15 @@ using namespace llvm;
 using namespace polly;
 using namespace pollyML;
 
+#define DEBUG_TYPE "ScopProfiling"
+
 char ScopProfiling::ID = 0;
 
 bool ScopProfiling::runOnScop(Scop &S) {
+  DEBUG(errs() << "Injecting profiling code inside function: "
+    << S.getFunction().getName() << " for SCoP: " << S.getName()
+    << '\n');
+
   // may return null, if so use EntryBlock
   BasicBlock *ScopEntry = S.getEnteringBlock();
   if (ScopEntry == nullptr) {
@@ -39,17 +46,10 @@ bool ScopProfiling::runOnScop(Scop &S) {
   BasicBlock *ScopExit = S.getExit();
 
   IRBuilder<> Builder{ScopEntry->getContext()};
-  const std::string BeginMessage =
-      "Before SCOP: " + S.getNameStr() +
-      " in function: " + S.getFunction().getName().str() + '\n';
-  const std::string EndMessage =
-      "After SCOP: " + S.getNameStr() +
-      " in function: " + S.getFunction().getName().str() + '\n';
-
   Builder.SetInsertPoint(ScopEntry, --ScopEntry->end());
-  codegen::createPrintCall(Builder, BeginMessage);
+  // TODO Insert startScop call
   Builder.SetInsertPoint(ScopExit, ScopExit->getFirstInsertionPt());
-  codegen::createPrintCall(Builder, EndMessage);
+  // TODO Insert stopScop call
   return true;
 }
 
@@ -67,7 +67,6 @@ void ScopProfiling::printScop(raw_ostream &OS, Scop &S) const {
   OS << "-- Scop exit: " << ScopExit->getName() << '\n';
   OS << "SCop Parameters: \n";
   for (const llvm::SCEV* Param: S.parameters()) {
-    std::string ParameterName;
     if (const SCEVUnknown *ValueParameter = dyn_cast<SCEVUnknown>(Param)) {
       Value *Val = ValueParameter->getValue();
       Val->getType()->print(OS);
