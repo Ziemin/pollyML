@@ -25,17 +25,9 @@ class ProfilingInitializer : public llvm::ModulePass {
 public:
   static char ID;
 
-  ProfilingInitializer() : llvm::ModulePass(ID), profilingContext(nullptr) { }
+  ProfilingInitializer() : llvm::ModulePass(ID) { }
 
   bool runOnModule(llvm::Module &M) override;
-
-  llvm::GlobalVariable *getProfilingContextValue() {
-    return profilingContext;
-  }
-
-private:
-  llvm::GlobalVariable *profilingContext;
-
 };
 
 llvm::Pass *createProfilingInitializerPass();

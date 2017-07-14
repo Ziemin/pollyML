@@ -28,10 +28,12 @@ using namespace pollyML;
 char ProfilingInitializer::ID = 0;
 
 bool ProfilingInitializer::runOnModule(Module &M) {
-  DEBUG(errs() << "Injecting ScopProfiling initialization code to module: "
+  DEBUG(errs() << "Injecting ScopProfiling initialization and finalization code to module: "
                << M.getName() << '\n');
-  this->profilingContext = codegen::createGlobalProfilingContextValue(M);
-  codegen::createFinishProfilingCall(M, this->profilingContext);
+
+  GlobalVariable *profilingContext = codegen::createGlobalProfilingContextValue(M);
+  codegen::createFinishProfilingCall(M, profilingContext);
+  codegen::createStartAndStopProfilingDeclarations(M);
 
   return true;
 }

@@ -13,10 +13,12 @@
 
 #include "pollyML/ScopProfiling.h"
 #include "pollyML/ProfilingCodegen.h"
+#include "pollyML/ProfilingInitializer.h"
 #include "polly/DependenceInfo.h"
 #include "polly/ScopInfo.h"
 #include "polly/Support/ScopHelper.h"
 #include "polly/Support/SCEVValidator.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instruction.h"
@@ -31,6 +33,7 @@ using namespace pollyML;
 
 #define DEBUG_TYPE "ScopProfiling"
 
+
 char ScopProfiling::ID = 0;
 
 bool ScopProfiling::runOnScop(Scop &S) {
@@ -38,24 +41,51 @@ bool ScopProfiling::runOnScop(Scop &S) {
     << S.getFunction().getName() << " for SCoP: " << S.getName()
     << '\n');
 
-  // may return null, if so use EntryBlock
+  // -- Call start_scop profiling function
+  // may return null, if so, use EntryBlock
   BasicBlock *ScopEntry = S.getEnteringBlock();
   if (ScopEntry == nullptr) {
     ScopEntry = S.getEntry();
   }
-  BasicBlock *ScopExit = S.getExit();
+  SmallVector<std::string, 3> ParameterNames;
+  SmallVector<Value*, 3> ParameterValues;
 
-  IRBuilder<> Builder{ScopEntry->getContext()};
-  Builder.SetInsertPoint(ScopEntry, --ScopEntry->end());
-  // TODO Insert startScop call
-  Builder.SetInsertPoint(ScopExit, ScopExit->getFirstInsertionPt());
-  // TODO Insert stopScop call
+  for (const SCEV* Param: S.parameters()) {
+    std::string paramName;
+    raw_string_ostream OS(paramName);
+    Param->print(OS);
+    OS.flush();
+    if (const SCEVUnknown *ValueParameter = dyn_cast<SCEVUnknown>(Param)) {
+      DEBUG(errs() << "Adding Scop parameter: " << paramName << 'n');
+      Value *Val = ValueParameter->getValue();
+      ParameterValues.push_back(Val);
+      ParameterNames.push_back(std::move(paramName));
+    } else {
+      DEBUG(errs() << "Parameter " << paramName << " is not SCEVUnknown. "
+                   << "Not adding it to the list!");
+    }
+  }
+  Module& M = *ScopEntry->getModule();
+  Value* RegionNamePtr = codegen::createStartProfilingCall(
+      M,
+      *ScopEntry,
+      S.getName(),
+      ParameterNames,
+      ParameterValues,
+      scopCount);
+
+  // -- Call stop_scop profiling function
+  BasicBlock *ScopExit = S.getExit();
+  codegen::createStopProfilingCall(M, *ScopExit, RegionNamePtr);
+
+  scopCount++;
+
   return true;
 }
 
 void ScopProfiling::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<ScopInfoRegionPass>();
-  AU.setPreservesAll();
+  AU.addRequired<ProfilingInitializer>();
 }
 
 void ScopProfiling::printScop(raw_ostream &OS, Scop &S) const {
@@ -85,6 +115,7 @@ Pass *pollyML::createScopProfilingPass() {
 INITIALIZE_PASS_BEGIN(ScopProfiling, "pollyML-scop-profile",
                       "PollyML - Inject Profiling Code to detected Scops",
                       false, false)
+INITIALIZE_PASS_DEPENDENCY(ProfilingInitializer);
 INITIALIZE_PASS_DEPENDENCY(ScopInfoRegionPass);
 INITIALIZE_PASS_END(ScopProfiling, "pollyML-scop-profile",
                     "PollyML - Inject Profiling Code to detected Scops", false,

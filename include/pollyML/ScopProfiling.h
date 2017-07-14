@@ -29,6 +29,15 @@ public:
   void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
 
   void printScop(llvm::raw_ostream &OS, polly::Scop &S) const override;
+
+  using polly::ScopPass::doFinalization;
+  bool doFinalization(llvm::Module&) override {
+    scopCount = 0;
+    return true;
+  }
+
+private:
+  int scopCount = 0;
 };
 
 llvm::Pass *createScopProfilingPass();
