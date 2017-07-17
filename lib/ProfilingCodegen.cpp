@@ -191,7 +191,10 @@ Value* createStartProfilingCall(
   for (uint valInd = 0; valInd < ParameterValues.size(); valInd++) {
     Value* paramAddr = builder.CreateConstGEP2_32(
         valuesArrTy, paramValuesVar, 0, valInd, "p_" + std::to_string(valInd));
-    builder.CreateStore(ParameterValues[valInd], paramAddr);
+
+    // SExt instruction to promote integers to i64
+    Value* paramIni64 = builder.CreateSExt(ParameterValues[valInd], builder.getInt64Ty());
+    builder.CreateStore(paramIni64, paramAddr);
   }
 
   // -- prepare arguments

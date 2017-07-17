@@ -58,6 +58,10 @@ public:
 
   /// Starts timers for the chosen region and saves values of the parameters.
   auto startProfiling(llvm::StringRef region, params_t scop_params) -> void {
+    std::cerr << "Start of SCoP: " << region.data() << '\n';
+    for (auto& p : scop_params) {
+      std::cerr << hana::first(p) << " " << hana::second(p) << '\n';
+    }
     last_times = getCurrentTimepoints();
 
     parameters[region].push_back(std::move(scop_params));
