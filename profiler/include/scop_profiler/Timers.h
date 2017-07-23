@@ -19,6 +19,10 @@
 #include <boost/chrono.hpp>
 #include <iostream>
 #include <string_view>
+#include <vector>
+#include <papi.h>
+
+#include "scop_profiler/Papi.h"
 
 namespace chr = boost::chrono;
 
@@ -49,6 +53,8 @@ struct RDTSCTimer {
     asm volatile ("rdtscp" : "=a" (lo), "=d" (hi));
     return ((uint64_t)hi << 32) | lo;
   }
+
+  auto print(std::ostream& out, uint64_t dur) const -> void;
 };
 
 
@@ -66,12 +72,12 @@ struct ClockTimer {
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &tm);
     return tm;
   }
+
+  auto print(std::ostream& out, const duration_t& dur) const -> void;
 };
 
 auto operator-(ClockTimer::timepoint_t end_time,
                ClockTimer::timepoint_t beg_time) -> ClockTimer::duration_t;
-
-auto operator<<(std::ostream& out, timespec tm) -> std::ostream&;
 
 
 /// Timer using boost's cpu user clock to measure user time.
@@ -86,13 +92,30 @@ struct BoostUserTimer {
   static auto now() -> timepoint_t {
     return clock_t::now();
   }
-};
 
-auto operator<<(std::ostream& out, const BoostUserTimer::duration_t& dur) -> std::ostream&;
+  auto print(std::ostream& out, const duration_t& dur) const -> void;
+};
 
 
 /// Timer collecting several hardware counters using PAPI.
 struct PAPITimer {
   static std::string_view name;
 
+  using timepoint_t = std::vector<long long int>;
+  using duration_t = std::vector<long long int>;
+
+  PAPITimer(papi::EventSet_t event_set);
+
+  auto now() -> timepoint_t;
+
+  auto print(std::ostream& out, const duration_t& dur) const -> void;
+
+private:
+  papi::EventSet_t event_set;
+  int num_events;
+  std::vector<long long int> counters;
+  int event_codes[10];
 };
+
+auto operator-(PAPITimer::timepoint_t end_time,
+               PAPITimer::timepoint_t beg_time) -> PAPITimer::duration_t;

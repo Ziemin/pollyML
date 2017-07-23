@@ -1,13 +1,23 @@
 #include <time.h>
 #include <unistd.h>
 #include <boost/chrono.hpp>
+#include <boost/hana/tuple.hpp>
+#include <boost/hana/transform.hpp>
+#include <boost/hana/zip_with.hpp>
+#include <boost/hana/minus.hpp>
 
 #include "scop_profiler/Timers.h"
+#include "scop_profiler/Papi.h"
 
 namespace chr = boost::chrono;
+namespace hana = boost::hana;
 
 // ---- RDTSCTimer ------------------------------------------------------------
 std::string_view RDTSCTimer::name = "RDTSC";
+
+auto RDTSCTimer::print(std::ostream& out, uint64_t dur) const -> void {
+  out << dur;
+}
 
 
 // ---- ClockTimer ------------------------------------------------------------
@@ -26,22 +36,56 @@ auto operator-(ClockTimer::timepoint_t end_time,
 }
 std::string_view ClockTimer::name = "Clock";
 
-auto operator<<(std::ostream& out, timespec tm) -> std::ostream& {
+auto ClockTimer::print(std::ostream& out, const timespec& tm) const -> void {
   out << "Seconds: " << tm.tv_sec << "Nsecs: " << tm.tv_nsec;
-  return out;
 }
 
 
 // ---- BoostUserTimer --------------------------------------------------------
 std::string_view BoostUserTimer::name = "BoostUserCPU";
 
-auto operator<<(std::ostream& out, const BoostUserTimer::duration_t& dur) -> std::ostream& {
+auto BoostUserTimer::print(std::ostream& out, const BoostUserTimer::duration_t& dur) const -> void {
   chr::seconds sdur = chr::duration_cast<chr::seconds>(dur);
   int64_t seconds = sdur.count();
   int64_t nseconds = dur.count() - chr::duration_cast<chr::nanoseconds>(sdur).count();
   out << "nsec total " << (int64_t)dur.count() << "; " << seconds << " sec " << nseconds << " nsec";
-  return out;
 }
 
 
 // ---- PAPITimer -------------------------------------------------------------
+std::string_view PAPITimer::name = "PAPICounters";
+
+PAPITimer::PAPITimer(papi::EventSet_t event_set)
+  : event_set(event_set)
+  , num_events(PAPI_num_events(event_set))
+  , counters(num_events, 0)
+  { 
+    PAPI_list_events(event_set, event_codes, &num_events);
+  }
+
+auto PAPITimer::now() -> PAPITimer::timepoint_t {
+  if (PAPI_accum(event_set, counters.data()) != PAPI_OK) {
+    std::cerr << "Could not accumulate events!\n";
+    exit(1);
+  }
+  return counters;
+}
+
+auto operator-(PAPITimer::timepoint_t end_time,
+               PAPITimer::timepoint_t beg_time) -> PAPITimer::duration_t {
+  auto difference = end_time;
+  for (size_t i = 0; i < beg_time.size(); i++) {
+    difference[i] -= beg_time[i];
+  }
+  return difference;
+}
+
+auto PAPITimer::print(std::ostream& out, const PAPITimer::duration_t& dur) const -> void {
+
+  char event_code_str[PAPI_MAX_STR_LEN];
+
+  for (int i = 0; i < num_events; i++) {
+    PAPI_event_code_to_name(event_codes[i], event_code_str);
+    out << event_code_str << ": " << dur[i];
+  }
+}

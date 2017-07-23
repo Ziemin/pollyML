@@ -1,4 +1,4 @@
-//===------ ExecutionContext.h ----------------------------------*- C++ -*-===//
+//===------ Statistics.h ----------------------------------------*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -48,13 +48,18 @@ private:
   llvm::StringMap<std::vector<durations_t>> durations;
   llvm::StringMap<std::vector<params_t>> parameters;
 
-  auto getCurrentTimepoints() const -> timepoints_t {
+  auto getCurrentTimepoints() -> timepoints_t {
     return hana::transform(
         timers,
-        [](const auto& timer){ return timer.now(); });
+        [](auto& timer){ return timer.now(); });
   }
 
 public:
+
+  Statistics() = default;
+
+  Statistics(Timers... timers)
+    : timers(hana::make_tuple(std::move(timers)...)) { }
 
   /// Starts timers for the chosen region and saves values of the parameters.
   auto startProfiling(llvm::StringRef region, params_t scop_params) -> void {
@@ -79,7 +84,9 @@ public:
               << "Timer results: \n";
     hana::zip_with(
         [](const auto& timer, const auto& dur) {
-          std::cerr << "-- " << timer.name.data() << ": " << dur << '\n';
+          std::cerr << "-- " << timer.name.data() << ": ";
+          timer.print(std::cerr, dur);
+          std::cerr << '\n';
           return 1;
         },
         timers, scop_durations);
