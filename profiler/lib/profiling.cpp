@@ -12,8 +12,10 @@
 //
 //===----------------------------------------------------------------------===//
 #include <iostream>
+#include <fstream>
 #include <stdint.h>
 #include <utility>
+#include <nlohmann/json.hpp>
 
 #include "scop_profiler/Papi.h"
 #include "scop_profiler/Statistics.h"
@@ -24,18 +26,26 @@ using ScopStatistics =
 
 /// Start profiling the program
 ///
+//  @param num_papi_events  The number of PAPI counters to follow
+//  @param papi_event_names The array with `num_papi_events` strings with the
+//                          names of the events to follow.
 /// @return pointer to a context handle of particular execution
-extern "C" void *init_profiling(int num_papi_timers,
+extern "C" void *init_profiling(int num_papi_events,
                                 const char *papi_event_names[]) {
   // TODO get settings
   std::cerr << "Profiling initialization" << std::endl;
 
   // setting up PAPI library
   papi::EventSet_t event_set =
-      papi::init_papi(num_papi_timers, papi_event_names);
+      papi::init_papi(num_papi_events, papi_event_names);
 
-  return new ScopStatistics(RDTSCTimer(), ClockTimer(), BoostUserTimer(),
+  auto *stats = new ScopStatistics(RDTSCTimer(), ClockTimer(), BoostUserTimer(),
                             PAPITimer(event_set));
+  // to measure raw time of callng timers
+  stats->startProfiling("EMPTY", {});
+  stats->stopProfiling("EMPTY");
+
+  return stats;
 }
 
 /// Start timers for the given SCOP.
@@ -70,8 +80,18 @@ extern "C" void stop_scop(void *context, char *region_name) {
 /// Stop the profiler. This should result in saving profiling results.
 ///
 /// @param context  The pointer to a context handle of particular execution
-extern "C" void finish_profiling(void *context) {
+/// @param output_file  The string with the path of the destination file.
+extern "C" void finish_profiling(void *context, const char *output_file) {
   // TODO serialization of the results
   ScopStatistics *stats = reinterpret_cast<ScopStatistics *>(context);
-  stats->serializeToJson("/");
+  nlohmann::json data = stats->serializeToJson();
+
+  if (std::ofstream os(output_file); os) {
+    os << std::setw(4) << data << std::endl;
+  } else {
+    std::cerr << "Could not write to " << output_file << std::endl;
+    exit(1);
+  }
+
+  delete stats;
 }

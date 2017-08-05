@@ -16,6 +16,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <nlohmann/json.hpp>
 #include <boost/hana/tuple.hpp>
 #include <boost/hana/transform.hpp>
 #include <boost/hana/zip_with.hpp>
@@ -25,6 +26,7 @@
 #include <llvm/ADT/StringRef.h>
 
 namespace hana = boost::hana;
+using json = nlohmann::json;
 
 using params_t = std::vector<hana::pair<std::string_view, int64_t>>;
 
@@ -97,7 +99,52 @@ public:
   /// Saves the results to json file
   ///
   /// @param out_path  The path to store the results.
-  auto serializeToJson(std::string_view out_path) const -> void {
+  auto serializeToJson() const -> json {
+    json results;
 
+    for (auto& scop_entry : durations) {
+      llvm::StringRef scop_name = scop_entry.getKey();
+
+      const auto& scop_durations = scop_entry.getValue();
+      const auto& scop_params = parameters.lookup(scop_name);
+
+      json scop_results = json::array();
+      json parameter_names = json::array();
+
+      const size_t count = scop_durations.size();
+      for (size_t i = 0; i < count; i++) {
+        // set parameter names for SCOP
+        if (i == 0) {
+          for (const auto& param: scop_params[0])
+            parameter_names.push_back(hana::first(param).data());
+        }
+
+        // save parameter values
+        json parameter_values = json::array();
+        for (const auto& param: scop_params[i])
+          parameter_values.push_back(hana::second(param));
+
+        // save timer results
+        json timers_results;
+        hana::zip_with(
+            [&timers_results](const auto& timer, const auto& dur) {
+              timer.to_json(timers_results[timer.name.data()], dur);
+              return 1;
+            },
+            timers, scop_durations[i]);
+
+        scop_results.push_back({
+            {"parameters", std::move(parameter_values)},
+            {"timers", std::move(timers_results)}
+        });
+      }
+
+      results[scop_name] = {
+        {"parameter_names", std::move(parameter_names)},
+        {"results", std::move(scop_results)}
+      };
+    }
+
+    return results;
   }
 };

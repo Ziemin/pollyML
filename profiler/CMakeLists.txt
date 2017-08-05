@@ -1,6 +1,7 @@
 project(ScopProfiler)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti -std=c++1z")
+add_definitions(-DJSON_NOEXCEPTION)
 
 find_package(PAPI REQUIRED)
 include_directories(${PAPI_INCLUDE_DIRS})

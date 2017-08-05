@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <unistd.h>
+#include <nlohmann/json.hpp>
 #include <time.h>
 #include <boost/chrono.hpp>
 #include <iostream>
@@ -25,6 +26,7 @@
 #include "scop_profiler/Papi.h"
 
 namespace chr = boost::chrono;
+using json = nlohmann::json;
 
 //===- Timer contract ----------------------------------------------------------
 //
@@ -33,10 +35,11 @@ namespace chr = boost::chrono;
 //     timepoint_t;
 //     duration_t;
 //     now() -> timepoint_t;
+//     print(ostream, duration) -> void;
+//     to_json(json, duration) -> void;
 //  }
 //
 //  Timer::timepoint_t - Timer::timepoint_t -> Timer::duration_t
-//  operator<<(ostream, duration) -> ostream
 //
 //===---------------------------------------------------------------------------
 
@@ -55,6 +58,7 @@ struct RDTSCTimer {
   }
 
   auto print(std::ostream& out, uint64_t dur) const -> void;
+  auto to_json(json& data, uint64_t dur) const -> void;
 };
 
 
@@ -74,6 +78,7 @@ struct ClockTimer {
   }
 
   auto print(std::ostream& out, const duration_t& dur) const -> void;
+  auto to_json(json& data, const duration_t& dur) const -> void;
 };
 
 auto operator-(ClockTimer::timepoint_t end_time,
@@ -94,6 +99,7 @@ struct BoostUserTimer {
   }
 
   auto print(std::ostream& out, const duration_t& dur) const -> void;
+  auto to_json(json& data, const duration_t& dur) const -> void;
 };
 
 
@@ -109,6 +115,7 @@ struct PAPITimer {
   auto now() -> timepoint_t;
 
   auto print(std::ostream& out, const duration_t& dur) const -> void;
+  auto to_json(json& data, const duration_t& dur) const -> void;
 
 private:
   papi::EventSet_t event_set;
