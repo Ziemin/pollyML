@@ -24,6 +24,7 @@
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/ADT/StringRef.h>
+#include <scop_profiler/Utils.h>
 
 namespace hana = boost::hana;
 using json = nlohmann::json;
@@ -65,10 +66,13 @@ public:
 
   /// Starts timers for the chosen region and saves values of the parameters.
   auto startProfiling(llvm::StringRef region, params_t scop_params) -> void {
-    std::cerr << "Start of SCoP: " << region.data() << '\n';
-    for (auto& p : scop_params) {
-      std::cerr << hana::first(p) << " " << hana::second(p) << '\n';
-    }
+
+    DEBUG_PRINT(
+      std::cerr << "Start of SCoP: " << region.data() << '\n';
+      for (auto& p : scop_params) {
+        std::cerr << hana::first(p) << " " << hana::second(p) << '\n';
+      }
+    );
     last_times = getCurrentTimepoints();
 
     parameters[region].push_back(std::move(scop_params));
@@ -82,16 +86,18 @@ public:
         new_times,
         last_times);
 
-    std::cerr << "End of SCoP: " << region.data() << '\n'
-              << "Timer results: \n";
-    hana::zip_with(
-        [](const auto& timer, const auto& dur) {
-          std::cerr << "-- " << timer.name.data() << ": ";
-          timer.print(std::cerr, dur);
-          std::cerr << '\n';
-          return 1;
-        },
-        timers, scop_durations);
+    DEBUG_PRINT(
+      std::cerr << "End of SCoP: " << region.data() << '\n'
+                  << "Timer results: \n";
+      hana::zip_with(
+          [](const auto& timer, const auto& dur) {
+            std::cerr << "-- " << timer.name.data() << ": ";
+            timer.print(std::cerr, dur);
+            std::cerr << '\n';
+            return 1;
+          },
+          timers, scop_durations);
+    );
 
     durations[region].push_back(std::move(scop_durations));
   }

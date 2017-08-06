@@ -31,6 +31,7 @@ using namespace pollyML;
 namespace pollyML {
 namespace codegen {
 
+
 void createStartAndStopProfilingDeclarations(llvm::Module& M) {
   IRBuilder<> builder{M.getContext()};
 
@@ -54,11 +55,13 @@ void createStartAndStopProfilingDeclarations(llvm::Module& M) {
   M.getOrInsertFunction(STOP_SCOP_FUN_NAME, stopScopFunType);
 }
 
-llvm::GlobalVariable* createGlobalProfilingContextValue(llvm::Module& M) {
+
+llvm::GlobalVariable* createGlobalProfilingContextValue(
+    llvm::Module& M, llvm::ArrayRef<std::string> PAPITimers) {
 
   IRBuilder<> builder{M.getContext()};
 
-  ArrayRef<Type *> initProfilingArgs{};
+  // -- context global variable preparation
   // int8* will model the void* from the profiling api
   llvm::PointerType* contextType = builder.getInt8Ty()->getPointerTo();
 
@@ -67,20 +70,25 @@ llvm::GlobalVariable* createGlobalProfilingContextValue(llvm::Module& M) {
       M,                                           // module
       contextType,                                 // value type
       false,                                       // isConstant
-      GlobalValue::LinkOnceAnyLinkage,                 // linkage
+      GlobalValue::LinkOnceAnyLinkage,             // linkage
       llvm::ConstantPointerNull::get(contextType), // initializer
-      PROFILING_CONTEXT_VAR_NAME);                          // name
+      PROFILING_CONTEXT_VAR_NAME);                 // name
 
-  // create declaration of init_profiling function
+  // -- create declaration of init_profiling function
+  std::array<Type *, 2> initProfilingArgs{{
+    builder.getInt32Ty(),                                // num_papi_events
+    builder.getInt8Ty()->getPointerTo()->getPointerTo(), // papi_event_names
+  }};
+
   FunctionType *initProfilingType = FunctionType::get(
       contextType, initProfilingArgs, false);
   M.getOrInsertFunction(INIT_PROFILING_FUN_NAME, initProfilingType);
   Function *initProfilingFun = M.getFunction(INIT_PROFILING_FUN_NAME);
 
-  // Define a function calling init_profiling and setting its result to
-  // our global variable.
+  // -- Define a function calling init_profiling and setting its result to
+  // -- our global variable.
   FunctionType *prepareContextType = FunctionType::get(
-      builder.getVoidTy(), initProfilingArgs, false);
+      builder.getVoidTy(), {}, false);
   Function *prepareContextFun = Function::Create(
       prepareContextType,
       Function::LinkOnceAnyLinkage,
@@ -90,7 +98,42 @@ llvm::GlobalVariable* createGlobalProfilingContextValue(llvm::Module& M) {
   BasicBlock *prepareBody = BasicBlock::Create(
       M.getContext(), "body", prepareContextFun);
   builder.SetInsertPoint(prepareBody);
-  CallInst* voidPtrCall = builder.CreateCall(initProfilingFun, {}, "CtxPtr");
+
+  // -- arguments preparation
+  // papi events count
+  ConstantInt* papiTimersCountArg = builder.getInt32(PAPITimers.size());
+  papiTimersCountArg->setName("__scop_num_papi_events");
+
+  // papi event names
+  ArrayType* papiEventNamesArrTy = ArrayType::get(
+      builder.getInt8Ty()->getPointerTo(),
+      PAPITimers.size());
+
+  SmallVector<Constant*, 6> papiEventNamesValues;
+  uint ind = 0;
+  for (auto &timerName: PAPITimers) {
+    Value* papiTimerNameStrVal = builder.CreateGlobalStringPtr(
+        timerName, formatv("__scop_papi_event_name_{0}", ind));
+    papiEventNamesValues.push_back(dyn_cast<Constant>(papiTimerNameStrVal));
+    ind++;
+  }
+  GlobalVariable* papiEventNamesVar = new GlobalVariable(
+      M,
+      papiEventNamesArrTy,
+      true,
+      GlobalValue::PrivateLinkage,
+      ConstantArray::get(papiEventNamesArrTy, papiEventNamesValues),
+      "__scop_papi_event_names");
+  Value* ptrToEventNamesArg = builder.CreateConstGEP2_32(
+      papiEventNamesArrTy, papiEventNamesVar, 0, 0);
+
+  std::array<Value*, 2> callArgs{{papiTimersCountArg, ptrToEventNamesArg}};
+
+  // -- actual call to init_profiling
+  CallInst* voidPtrCall = builder.CreateCall(
+      initProfilingFun,
+      callArgs,
+      "CtxPtr");
   builder.CreateStore(voidPtrCall, profilingContextPtr, false);
   builder.CreateRetVoid();
 
@@ -101,20 +144,24 @@ llvm::GlobalVariable* createGlobalProfilingContextValue(llvm::Module& M) {
 }
 
 
-void createFinishProfilingCall(Module& M, GlobalVariable* ProfilingContext) {
+void createFinishProfilingCall(Module& M,
+                               GlobalVariable* ProfilingContext,
+                               llvm::StringRef OutputFilePath) {
 
   IRBuilder<> builder{M.getContext()};
 
-  std::array<Type *, 1> finishProfilingArgs{{ProfilingContext->getValueType()}};
+  std::array<Type *, 2> finishProfilingArgs{
+    {ProfilingContext->getValueType(), builder.getInt8Ty()->getPointerTo()}
+  };
 
   // create declaration of finish_profiling function
   FunctionType *finishProfilingType = FunctionType::get(
       builder.getVoidTy(), finishProfilingArgs, false);
   M.getOrInsertFunction(FINISH_PROFILING_FUN_NAME, finishProfilingType);
-  Function *finishProfilingFun= M.getFunction(FINISH_PROFILING_FUN_NAME);
+  Function *finishProfilingFun = M.getFunction(FINISH_PROFILING_FUN_NAME);
 
   // Define a function calling finish_profiling
-  FunctionType *callFinishType= FunctionType::get(
+  FunctionType *callFinishType = FunctionType::get(
       builder.getVoidTy(), {}, false);
   Function *callFinishFun = Function::Create(
       callFinishType,
@@ -122,11 +169,16 @@ void createFinishProfilingCall(Module& M, GlobalVariable* ProfilingContext) {
       "__finish_scop_profiling",
       &M);
 
+
   BasicBlock *finishBody = BasicBlock::Create(
       M.getContext(), "body", callFinishFun);
   builder.SetInsertPoint(finishBody);
+
+  Value* outputFilePathVal = builder.CreateGlobalStringPtr(
+      OutputFilePath, "__scop_output_file_path");
+
   llvm::Value* loadedCtx = builder.CreateLoad(ProfilingContext, "CtxPtr");
-  builder.CreateCall(finishProfilingFun, {loadedCtx});
+  builder.CreateCall(finishProfilingFun, {loadedCtx, outputFilePathVal});
   builder.CreateRetVoid();
 
   // Add this function to global llvm destructors
@@ -157,7 +209,7 @@ Value* createStartProfilingCall(
                                          ParameterNames.size());
   SmallVector<Constant*, 3> initNames;
   uint ind = 0;
-  for(auto &paramName: ParameterNames) {
+  for (auto &paramName: ParameterNames) {
     Value* paramStrVal = builder.CreateGlobalStringPtr(
         paramName, formatv("__scop_{0}_param_p_{1}", ScopNumber, ind));
     initNames.push_back(dyn_cast<Constant>(paramStrVal));
@@ -216,6 +268,7 @@ Value* createStartProfilingCall(
 
   return regionNameArg;
 }
+
 
 void createStopProfilingCall(
     llvm::Module& M,

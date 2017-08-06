@@ -16,6 +16,7 @@
 #include "pollyML/RegisterPasses.h"
 #include "pollyML/ScopProfiling.h"
 #include "pollyML/ProfilingInitializer.h"
+#include "pollyML/Options.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -24,6 +25,9 @@ using namespace llvm;
 using namespace polly;
 using namespace pollyML;
 
+cl::OptionCategory PollyMLCategory("PollyML Options",
+                                   "Configure the pollyML loop optimizer"
+                                   "and profiler");
 
 namespace pollyML {
 void initializePollyMLPasses(PassRegistry &Registry) {
