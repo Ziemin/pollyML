@@ -35,13 +35,13 @@ static cl::opt<std::string>
                             cl::Hidden, cl::value_desc("file path"), cl::ValueRequired,
                             cl::init("stats.json"), cl::cat(PollyMLCategory));
 
-static cl::list<std::string>
-    ProfilingPAPIEventNames("pollyML-papi-events",
-                            cl::desc("Names of PAPI events to track during profiling."
-                                     "By default: PAPI_TOT_CYC,PAPI_TOT_INS,PAPI_L1_DCM,PAPI_BR_MSP"),
-                            cl::Hidden, cl::value_desc("PAPI event names"),
-                            cl::CommaSeparated,
-                            cl::cat(PollyMLCategory));
+static cl::opt<std::string>
+    ProfilingConfigFile("pollyML-config-json-file",
+                         cl::desc("Path to json with the configuration of"
+                                  " the profiler"),
+                         cl::Hidden, cl::ValueRequired,
+                         cl::init("profiler_config.json"),
+                         cl::cat(PollyMLCategory));
 
 char ProfilingInitializer::ID = 0;
 
@@ -49,20 +49,8 @@ bool ProfilingInitializer::runOnModule(Module &M) {
   DEBUG(errs() << "Injecting ScopProfiling initialization and finalization code to module: "
                << M.getName() << '\n');
 
-  llvm::SmallVector<std::string, 6> papiEventNames;
-  if (ProfilingPAPIEventNames.empty()) {
-    papiEventNames = {"PAPI_TOT_CYC",
-                      "PAPI_TOT_INS",
-                      "PAPI_L1_DCM",
-                      "PAPI_BR_MSP"};
-  } else {
-    for (const std::string& eventName : ProfilingPAPIEventNames) {
-      papiEventNames.push_back(eventName);
-    }
-  }
-
   GlobalVariable *profilingContext = codegen::createGlobalProfilingContextValue(
-      M, papiEventNames);
+      M, ProfilingConfigFile);
   codegen::createFinishProfilingCall(M, profilingContext, ProfilingJsonOutputFile);
   codegen::createStartAndStopProfilingDeclarations(M);
 

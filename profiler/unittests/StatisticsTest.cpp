@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <vector>
 #include <thread>
 
 #include "scop_profiler/Statistics.h"
@@ -17,10 +18,10 @@ TEST(ScopStatistics, FewTimers) {
   using TimeStatistics =
       Statistics<RDTSCTimer, ClockTimer, BoostUserTimer, PAPITimer>;
 
-  const char *papiEventNames[] = { "PAPI_TOT_CYC", "PAPI_TOT_INS", "PAPI_L1_DCM",
-                                   "PAPI_BR_MSP" };
+  const std::vector<std::string> papiEventNames{
+    "PAPI_TOT_CYC", "PAPI_TOT_INS", "PAPI_L1_DCM", "PAPI_BR_MSP"};
 
-  papi::EventSet_t event_set = papi::init_papi(4, papiEventNames);
+  papi::EventSet_t event_set = papi::init_papi(papiEventNames);
 
   TimeStatistics stats{RDTSCTimer(), ClockTimer(), BoostUserTimer(),
                        PAPITimer(event_set)};

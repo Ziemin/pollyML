@@ -35,7 +35,7 @@ void createStartAndStopProfilingDeclarations(llvm::Module &M);
 /// profiling library.
 /// This call is added to module constructors 'llvm.global_ctors'
 llvm::GlobalVariable *createGlobalProfilingContextValue(
-    llvm::Module &M, llvm::ArrayRef<std::string> PAPITimers);
+    llvm::Module &M, llvm::StringRef ConfigFile);
 
 /// This creates a call to finish_profiling function from the profiling library.
 /// This call is added to module destructors 'llvm.global_dtors'

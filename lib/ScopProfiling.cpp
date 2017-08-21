@@ -24,6 +24,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include <string>
 
@@ -37,9 +38,13 @@ using namespace pollyML;
 char ScopProfiling::ID = 0;
 
 bool ScopProfiling::runOnScop(Scop &S) {
+  // name identified as concatenation of a function name and a scop name
+  std::string regionName =
+      formatv("{0}___{1}", S.getFunction().getName(), S.getName());
+
   DEBUG(errs() << "Injecting profiling code inside function: "
-    << S.getFunction().getName() << " for SCoP: " << S.getName()
-    << '\n');
+               << S.getFunction().getName() << " for SCoP: " << S.getName()
+               << '\n');
 
   // -- Call start_scop profiling function
   // may return null, if so, use EntryBlock
@@ -48,9 +53,9 @@ bool ScopProfiling::runOnScop(Scop &S) {
     ScopEntry = S.getEntry();
   }
   SmallVector<std::string, 3> ParameterNames;
-  SmallVector<Value*, 3> ParameterValues;
+  SmallVector<Value *, 3> ParameterValues;
 
-  for (const SCEV* Param: S.parameters()) {
+  for (const SCEV *Param : S.parameters()) {
     std::string paramName;
     raw_string_ostream OS(paramName);
     Param->print(OS);
@@ -65,14 +70,9 @@ bool ScopProfiling::runOnScop(Scop &S) {
                    << "Not adding it to the list!");
     }
   }
-  Module& M = *ScopEntry->getModule();
-  Value* RegionNamePtr = codegen::createStartProfilingCall(
-      M,
-      *ScopEntry,
-      S.getName(),
-      ParameterNames,
-      ParameterValues,
-      scopCount);
+  Module &M = *ScopEntry->getModule();
+  Value *RegionNamePtr = codegen::createStartProfilingCall(
+      M, *ScopEntry, regionName, ParameterNames, ParameterValues, scopCount);
 
   // -- Call stop_scop profiling function
   BasicBlock *ScopExit = S.getExit();

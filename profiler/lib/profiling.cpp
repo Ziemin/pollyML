@@ -15,29 +15,60 @@
 #include <fstream>
 #include <stdint.h>
 #include <utility>
+#include <vector>
 #include <nlohmann/json.hpp>
+#include <memory>
 
 #include "scop_profiler/Papi.h"
 #include "scop_profiler/Statistics.h"
 #include "scop_profiler/Timers.h"
+#include "scop_profiler/Utils.h"
+
+using json = nlohmann::json;
 
 using ScopStatistics =
     Statistics<RDTSCTimer, ClockTimer, BoostUserTimer, PAPITimer>;
 
+
+struct ProfilingContext {
+  bool flush_cache;  // if cache should be flushed on every scop start
+  int cache_size;    // the size of the cache to flush (in KB)
+  std::unique_ptr<ScopStatistics> statistics;  // handle to the stats gatherer
+};
+
 /// Start profiling the program
 ///
-//  @param num_papi_events  The number of PAPI counters to follow
-//  @param papi_event_names The array with `num_papi_events` strings with the
-//                          names of the events to follow.
-/// @return pointer to a context handle of particular execution
-extern "C" void *init_profiling(int num_papi_events,
-                                const char *papi_event_names[]) {
-  // TODO get settings
-  std::cerr << "Profiling initialization" << std::endl;
+/// @param configuration_file Path to a file with profiler configuration
 
+/// @return pointer to a context handle of particular execution
+extern "C" void *init_profiling(const char *configuration_file) {
+  DEBUG_PRINT(std::cerr << "Profiling initialization" << std::endl);
+
+  // read config file
+  std::ifstream is(configuration_file);
+  if (!is) {
+    std::cerr << "Could not open config file " << configuration_file << std::endl;
+    exit(1);
+  }
+  json config;
+  is >> config;
+  int cache_size = 0;
+  bool flush_cache = false;
+  if (config.find("flush_cache") != end(config) && config["flush_cache"].get<bool>()) {
+    flush_cache = true;
+    if (config.find("cache_size") == end(config)) {
+      std::cerr << "Cache size should be provided when flushing" << std::endl;
+    }
+    cache_size = config["cache_size"];
+  }
+
+  if (config.find("papi_events") == end(config)) {
+    std::cerr << "No papi_events field in the config" << std::endl;
+    exit(1);
+  }
+  std::vector<std::string> papi_events = config["papi_events"];
   // setting up PAPI library
-  papi::EventSet_t event_set =
-      papi::init_papi(num_papi_events, papi_event_names);
+  papi::EventSet_t event_set = papi::init_papi(papi_events);
 
   auto *stats = new ScopStatistics(RDTSCTimer(), ClockTimer(), BoostUserTimer(),
                             PAPITimer(event_set));
@@ -45,7 +76,11 @@ extern "C" void *init_profiling(int num_papi_events,
   stats->startProfiling("EMPTY", {});
   stats->stopProfiling("EMPTY");
 
-  return stats;
+  return new ProfilingContext{
+    flush_cache,
+    cache_size,
+    std::unique_ptr<ScopStatistics>(stats)
+  };
 }
 
 /// Start timers for the given SCOP.
@@ -60,12 +95,12 @@ extern "C" void start_scop(void *context, char *region_name, int param_count,
                            const char *parameter_names[],
                            int64_t parameter_values[]) {
 
-  ScopStatistics *stats = reinterpret_cast<ScopStatistics *>(context);
+  ProfilingContext *ctx = reinterpret_cast<ProfilingContext *>(context);
   params_t parameters;
   for (int i = 0; i < param_count; i++) {
     parameters.emplace_back(parameter_names[i], parameter_values[i]);
   }
-  stats->startProfiling(region_name, std::move(parameters));
+  ctx->statistics->startProfiling(region_name, std::move(parameters));
 }
 
 /// Stop timers for the given SCOP.
@@ -73,8 +108,13 @@ extern "C" void start_scop(void *context, char *region_name, int param_count,
 /// @param context      The pointer to a context handle of particular execution
 /// @param region_name  The name of the region being profiled
 extern "C" void stop_scop(void *context, char *region_name) {
-  ScopStatistics *stats = reinterpret_cast<ScopStatistics *>(context);
-  stats->stopProfiling(region_name);
+  ProfilingContext *ctx = reinterpret_cast<ProfilingContext *>(context);
+  if (ctx->flush_cache) {
+    DEBUG_PRINT(
+      std::cerr << "Flushing cache of size " << ctx->cache_size << " KB \n");
+    flush_cache(ctx->cache_size);
+  }
+  ctx->statistics->stopProfiling(region_name);
 }
 
 /// Stop the profiler. This should result in saving profiling results.
@@ -82,9 +122,9 @@ extern "C" void stop_scop(void *context, char *region_name) {
 /// @param context  The pointer to a context handle of particular execution
 /// @param output_file  The string with the path of the destination file.
 extern "C" void finish_profiling(void *context, const char *output_file) {
-  // TODO serialization of the results
-  ScopStatistics *stats = reinterpret_cast<ScopStatistics *>(context);
-  nlohmann::json data = stats->serializeToJson();
+
+  ProfilingContext *ctx = reinterpret_cast<ProfilingContext *>(context);
+  json data = ctx->statistics->serializeToJson();
 
   if (std::ofstream os(output_file); os) {
     os << std::setw(4) << data << std::endl;
@@ -93,5 +133,5 @@ extern "C" void finish_profiling(void *context, const char *output_file) {
     exit(1);
   }
 
-  delete stats;
+  delete ctx;
 }

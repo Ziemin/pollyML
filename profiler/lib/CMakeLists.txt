@@ -1,7 +1,8 @@
 add_library(ScopProfiler SHARED
   profiling.cpp
   Timers.cpp
-  Papi.cpp)
+  Papi.cpp
+  Utils.cpp)
 
 target_link_libraries(ScopProfiler
     ${Boost_LIBRARIES}

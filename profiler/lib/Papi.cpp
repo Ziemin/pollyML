@@ -2,11 +2,12 @@
 
 #include <assert.h>
 #include <iostream>
+#include <vector>
 #include <papi.h>
 
 namespace papi {
 
-auto init_papi(int events_num, const char **event_code_names) -> EventSet_t {
+auto init_papi(const std::vector<std::string>& papi_events) -> EventSet_t {
 
   if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
     std::cerr << "PAPI library init error!\n";
@@ -22,15 +23,14 @@ auto init_papi(int events_num, const char **event_code_names) -> EventSet_t {
   }
 
   // adding events to record
-  for (int i = 0; i < events_num; i++) {
-    if (PAPI_event_name_to_code(const_cast<char *>(event_code_names[i]),
+  for (const std::string& event_name: papi_events) {
+    if (PAPI_event_name_to_code(const_cast<char *>(event_name.data()),
                                 &event_code) != PAPI_OK) {
-      std::cerr << "Invalid PAPI event name: " << event_code_names[i] << "!\n";
+      std::cerr << "Invalid PAPI event name: " << event_name  << "!\n";
       exit(1);
     }
     if (PAPI_add_event(event_set, event_code) != PAPI_OK) {
-      std::cerr << "Counter for " << event_code_names[i]
-                << " is not available!\n";
+      std::cerr << "Counter for " << event_name << " is not available!\n";
       exit(1);
     }
   }

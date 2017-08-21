@@ -12,3 +12,5 @@
 #else 
 #define DEBUG_PRINT(x)
 #endif
+
+auto flush_cache(int cache_size) -> void;

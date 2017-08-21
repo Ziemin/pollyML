@@ -57,7 +57,7 @@ void createStartAndStopProfilingDeclarations(llvm::Module& M) {
 
 
 llvm::GlobalVariable* createGlobalProfilingContextValue(
-    llvm::Module& M, llvm::ArrayRef<std::string> PAPITimers) {
+    llvm::Module& M, llvm::StringRef ConfigFile) {
 
   IRBuilder<> builder{M.getContext()};
 
@@ -75,9 +75,8 @@ llvm::GlobalVariable* createGlobalProfilingContextValue(
       PROFILING_CONTEXT_VAR_NAME);                 // name
 
   // -- create declaration of init_profiling function
-  std::array<Type *, 2> initProfilingArgs{{
-    builder.getInt32Ty(),                                // num_papi_events
-    builder.getInt8Ty()->getPointerTo()->getPointerTo(), // papi_event_names
+  std::array<Type *, 1> initProfilingArgs{{
+    builder.getInt8Ty()->getPointerTo()  // path to configuration file
   }};
 
   FunctionType *initProfilingType = FunctionType::get(
@@ -100,34 +99,11 @@ llvm::GlobalVariable* createGlobalProfilingContextValue(
   builder.SetInsertPoint(prepareBody);
 
   // -- arguments preparation
-  // papi events count
-  ConstantInt* papiTimersCountArg = builder.getInt32(PAPITimers.size());
-  papiTimersCountArg->setName("__scop_num_papi_events");
+  Value* configFilePath = builder.CreateGlobalStringPtr(
+      ConfigFile, "__scop_config_file");
 
-  // papi event names
-  ArrayType* papiEventNamesArrTy = ArrayType::get(
-      builder.getInt8Ty()->getPointerTo(),
-      PAPITimers.size());
 
-  SmallVector<Constant*, 6> papiEventNamesValues;
-  uint ind = 0;
-  for (auto &timerName: PAPITimers) {
-    Value* papiTimerNameStrVal = builder.CreateGlobalStringPtr(
-        timerName, formatv("__scop_papi_event_name_{0}", ind));
-    papiEventNamesValues.push_back(dyn_cast<Constant>(papiTimerNameStrVal));
-    ind++;
-  }
-  GlobalVariable* papiEventNamesVar = new GlobalVariable(
-      M,
-      papiEventNamesArrTy,
-      true,
-      GlobalValue::PrivateLinkage,
-      ConstantArray::get(papiEventNamesArrTy, papiEventNamesValues),
-      "__scop_papi_event_names");
-  Value* ptrToEventNamesArg = builder.CreateConstGEP2_32(
-      papiEventNamesArrTy, papiEventNamesVar, 0, 0);
-
-  std::array<Value*, 2> callArgs{{papiTimersCountArg, ptrToEventNamesArg}};
+  std::array<Value*, 1> callArgs{{configFilePath}};
 
   // -- actual call to init_profiling
   CallInst* voidPtrCall = builder.CreateCall(
