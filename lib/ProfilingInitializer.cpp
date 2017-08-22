@@ -14,7 +14,6 @@
 
 #include "pollyML/ProfilingInitializer.h"
 #include "pollyML/ProfilingCodegen.h"
-#include "pollyML/ProfilingCodegen.h"
 #include "pollyML/Options.h"
 
 #include "llvm/IR/Module.h"

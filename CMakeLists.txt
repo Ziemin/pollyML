@@ -19,7 +19,8 @@ if (NOT POLLY_BINARY_DIR)
 endif ()
 
 set(POLLY_INCLUDE_DIRS
-  ${POLLY_SOURCE_DIR}/include)
+  ${POLLY_SOURCE_DIR}/include
+  ${POLLY_BINARY_DIR}/include)
 
 set(ISL_INCLUDE_DIRS
   ${POLLY_SOURCE_DIR}/lib/External/isl/include

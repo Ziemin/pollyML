@@ -18,6 +18,7 @@
 #include "polly/ScopInfo.h"
 #include "polly/Support/ScopHelper.h"
 #include "polly/Support/SCEVValidator.h"
+#include "polly/ScheduleOptimizer.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/IRBuilder.h"
@@ -85,7 +86,6 @@ bool ScopProfiling::runOnScop(Scop &S) {
 
 void ScopProfiling::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequiredTransitive<ScopInfoRegionPass>();
-  AU.addRequired<ProfilingInitializer>();
 }
 
 void ScopProfiling::printScop(raw_ostream &OS, Scop &S) const {
@@ -115,8 +115,8 @@ Pass *pollyML::createScopProfilingPass() {
 INITIALIZE_PASS_BEGIN(ScopProfiling, "pollyML-scop-profile",
                       "PollyML - Inject Profiling Code to detected Scops",
                       false, false)
-INITIALIZE_PASS_DEPENDENCY(ProfilingInitializer);
 INITIALIZE_PASS_DEPENDENCY(ScopInfoRegionPass);
+INITIALIZE_PASS_DEPENDENCY(ProfilingInitializer);
 INITIALIZE_PASS_END(ScopProfiling, "pollyML-scop-profile",
                     "PollyML - Inject Profiling Code to detected Scops", false,
                     false)
