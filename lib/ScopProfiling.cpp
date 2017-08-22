@@ -62,7 +62,7 @@ bool ScopProfiling::runOnScop(Scop &S) {
     Param->print(OS);
     OS.flush();
     if (const SCEVUnknown *ValueParameter = dyn_cast<SCEVUnknown>(Param)) {
-      DEBUG(errs() << "Adding Scop parameter: " << paramName << 'n');
+      DEBUG(errs() << "Adding Scop parameter: " << paramName << '\n');
       Value *Val = ValueParameter->getValue();
       ParameterValues.push_back(Val);
       ParameterNames.push_back(std::move(paramName));
