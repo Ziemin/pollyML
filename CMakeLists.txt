@@ -50,6 +50,7 @@ include_directories(
 
 # Add path for custom modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include("pollyML_macros")
 
 add_subdirectory(lib)
 add_subdirectory(test)
