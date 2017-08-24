@@ -29,7 +29,7 @@
 using json = nlohmann::json;
 
 using ScopStatistics =
-    Statistics<RDTSCTimer, ClockTimer, BoostUserTimer, PAPITimer>;
+    Statistics<RDTSCTimer, ClockTimer, PAPITimer>;
 
 
 namespace {
@@ -94,11 +94,13 @@ ProfilingContext::ProfilingContext()
   papi::EventSet_t event_set = papi::init_papi(papi_events);
 
   statistics = std::make_unique<ScopStatistics>(
-      RDTSCTimer(), ClockTimer(), BoostUserTimer(), PAPITimer(event_set));
+      RDTSCTimer(), ClockTimer(), PAPITimer(event_set));
 
-  // to measure raw time of callng timers
-  statistics->startProfiling("EMPTY", {});
-  statistics->stopProfiling("EMPTY");
+  // to measure raw time of calling timers
+  for (int i = 0; i < 5; i++) {
+    statistics->startProfiling("EMPTY", {});
+    statistics->stopProfiling("EMPTY");
+  }
 }
 
 extern "C" void init_profiling() {

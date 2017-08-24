@@ -120,7 +120,6 @@ struct PAPITimer {
 private:
   papi::EventSet_t event_set;
   int num_events;
-  std::vector<long long int> counters;
   int event_codes[10];
 };
 

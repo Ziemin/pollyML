@@ -72,13 +72,13 @@ std::string_view PAPITimer::name = "PAPICounters";
 PAPITimer::PAPITimer(papi::EventSet_t event_set)
   : event_set(event_set)
   , num_events(PAPI_num_events(event_set))
-  , counters(num_events, 0)
   { 
     PAPI_list_events(event_set, event_codes, &num_events);
   }
 
 auto PAPITimer::now() -> PAPITimer::timepoint_t {
-  if (PAPI_accum(event_set, counters.data()) != PAPI_OK) {
+  PAPITimer::timepoint_t counters(num_events, 0);
+  if (PAPI_read(event_set, counters.data()) != PAPI_OK) {
     std::cerr << "Could not accumulate events!\n";
     exit(1);
   }
