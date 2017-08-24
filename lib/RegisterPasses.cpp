@@ -65,7 +65,7 @@ namespace pollyML {
 void initializePollyMLPasses(PassRegistry &Registry) {
   initializeCodeGenerationPass(Registry);
 
-  initializeProfilingInitializerPass(Registry);
+  //initializeProfilingInitializerPass(Registry);
   initializeScopProfilingPass(Registry);
 
   initializeCodePreparationPass(Registry);

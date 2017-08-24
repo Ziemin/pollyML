@@ -20,6 +20,8 @@ namespace llvm {
 
 namespace pollyML {
 
+#define DEBUG_TYPE "ProfilingInitializer"
+
 class ProfilingInitializer : public llvm::ModulePass {
 
 public:
@@ -28,6 +30,9 @@ public:
   ProfilingInitializer() : llvm::ModulePass(ID) { }
 
   bool runOnModule(llvm::Module &M) override;
+
+private:
+  static bool initialized_profiler;
 };
 
 llvm::Pass *createProfilingInitializerPass();

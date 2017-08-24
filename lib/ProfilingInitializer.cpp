@@ -44,7 +44,15 @@ static cl::opt<std::string>
 
 char ProfilingInitializer::ID = 0;
 
+// We should not inject more calls to profiling library than just one
+bool ProfilingInitializer::initialized_profiler = false;
+
 bool ProfilingInitializer::runOnModule(Module &M) {
+  if (initialized_profiler) {
+    DEBUG(errs() << "Profiling has already been initialized\n");
+    return false;
+  }
+
   DEBUG(errs() << "Injecting ScopProfiling initialization and finalization code to module: "
                << M.getName() << '\n');
 
@@ -52,6 +60,8 @@ bool ProfilingInitializer::runOnModule(Module &M) {
       M, ProfilingConfigFile);
   codegen::createFinishProfilingCall(M, profilingContext, ProfilingJsonOutputFile);
   codegen::createStartAndStopProfilingDeclarations(M);
+
+  initialized_profiler = true;
 
   return true;
 }
