@@ -30,18 +30,14 @@ namespace codegen {
 /// Declares start_scop and stop_scop functions from the scop profiling library.
 void createStartAndStopProfilingDeclarations(llvm::Module &M);
 
-/// This creates a global value inside the module with the given name.
-/// The value is initialized by calling the init_profiling function from the
+/// The creates a function calling init_profiling function from the 
 /// profiling library.
 /// This call is added to module constructors 'llvm.global_ctors'
-llvm::GlobalVariable *createGlobalProfilingContextValue(
-    llvm::Module &M, llvm::StringRef ConfigFile);
+void createInitProfilingCall(llvm::Module &M);
 
 /// This creates a call to finish_profiling function from the profiling library.
 /// This call is added to module destructors 'llvm.global_dtors'
-void createFinishProfilingCall(llvm::Module &M,
-                               llvm::GlobalVariable *ProfilingContext,
-                               llvm::StringRef OutputFilePath);
+void createFinishProfilingCall(llvm::Module &M);
 
 /// This creates a call to start_scop function from the profiling library.
 /// Two arrays with names and parameter values are allocated for every scop.

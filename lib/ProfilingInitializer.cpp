@@ -53,12 +53,11 @@ bool ProfilingInitializer::runOnModule(Module &M) {
     return false;
   }
 
-  DEBUG(errs() << "Injecting ScopProfiling initialization and finalization code to module: "
+  DEBUG(errs() << "Injecting ScopProfiling functions to module: "
                << M.getName() << '\n');
 
-  GlobalVariable *profilingContext = codegen::createGlobalProfilingContextValue(
-      M, ProfilingConfigFile);
-  codegen::createFinishProfilingCall(M, profilingContext, ProfilingJsonOutputFile);
+  codegen::createInitProfilingCall(M);
+  codegen::createFinishProfilingCall(M);
   codegen::createStartAndStopProfilingDeclarations(M);
 
   initialized_profiler = true;

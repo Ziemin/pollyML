@@ -1,4 +1,5 @@
 #include "scop_profiler/Papi.h"
+#include "scop_profiler/Utils.h"
 
 #include <assert.h>
 #include <iostream>
@@ -33,6 +34,7 @@ auto init_papi(const std::vector<std::string>& papi_events) -> EventSet_t {
       std::cerr << "Counter for " << event_name << " is not available!\n";
       exit(1);
     }
+    DEBUG_PRINT(std::cerr << "Adding PAPI counter: " << event_name << '\n');
   }
 
   if (PAPI_start(event_set) != PAPI_OK) {

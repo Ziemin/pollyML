@@ -36,8 +36,7 @@ void createStartAndStopProfilingDeclarations(llvm::Module& M) {
   IRBuilder<> builder{M.getContext()};
 
   /// create start_scop declaration
-  std::array<Type *, 5> startScopArgumentsTy{{
-    builder.getInt8Ty()->getPointerTo(),                 // context
+  std::array<Type *, 4> startScopArgumentsTy{{
     builder.getInt8Ty()->getPointerTo(),                 // region_name
     builder.getInt32Ty(),                                // param_count
     builder.getInt8Ty()->getPointerTo()->getPointerTo(), // parameter_names
@@ -47,8 +46,7 @@ void createStartAndStopProfilingDeclarations(llvm::Module& M) {
   M.getOrInsertFunction(START_SCOP_FUN_NAME, startScopFunType);
 
   /// create stop_scop declaration
-  std::array<Type *, 2> stopScopArgumentsTy{{
-    builder.getInt8Ty()->getPointerTo(),                 // context
+  std::array<Type *, 1> stopScopArgumentsTy{{
     builder.getInt8Ty()->getPointerTo()}};               // region_name
   FunctionType *stopScopFunType = FunctionType::get(
       builder.getVoidTy(), stopScopArgumentsTy, false);
@@ -56,83 +54,46 @@ void createStartAndStopProfilingDeclarations(llvm::Module& M) {
 }
 
 
-llvm::GlobalVariable* createGlobalProfilingContextValue(
-    llvm::Module& M, llvm::StringRef ConfigFile) {
+void createInitProfilingCall(llvm::Module& M) {
 
   IRBuilder<> builder{M.getContext()};
 
-  // -- context global variable preparation
-  // int8* will model the void* from the profiling api
-  llvm::PointerType* contextType = builder.getInt8Ty()->getPointerTo();
-
-  // global variable to store the profiling context
-  GlobalVariable *profilingContextPtr = new GlobalVariable(
-      M,                                           // module
-      contextType,                                 // value type
-      false,                                       // isConstant
-      GlobalValue::LinkOnceAnyLinkage,             // linkage
-      llvm::ConstantPointerNull::get(contextType), // initializer
-      PROFILING_CONTEXT_VAR_NAME);                 // name
-
-  // -- create declaration of init_profiling function
-  std::array<Type *, 1> initProfilingArgs{{
-    builder.getInt8Ty()->getPointerTo()  // path to configuration file
-  }};
-
   FunctionType *initProfilingType = FunctionType::get(
-      contextType, initProfilingArgs, false);
+      builder.getVoidTy(), {}, false);
   M.getOrInsertFunction(INIT_PROFILING_FUN_NAME, initProfilingType);
   Function *initProfilingFun = M.getFunction(INIT_PROFILING_FUN_NAME);
 
   // -- Define a function calling init_profiling and setting its result to
   // -- our global variable.
-  FunctionType *prepareContextType = FunctionType::get(
+  FunctionType *callInitProfilingType = FunctionType::get(
       builder.getVoidTy(), {}, false);
-  Function *prepareContextFun = Function::Create(
-      prepareContextType,
+  Function *callInitProfilingFun = Function::Create(
+      callInitProfilingType,
       Function::LinkOnceAnyLinkage,
-      "__prepare_scop_profiling_context",
+      "__init_scop_profiling",
       &M);
 
   BasicBlock *prepareBody = BasicBlock::Create(
-      M.getContext(), "body", prepareContextFun);
+      M.getContext(), "body", callInitProfilingFun);
   builder.SetInsertPoint(prepareBody);
 
-  // -- arguments preparation
-  Value* configFilePath = builder.CreateGlobalStringPtr(
-      ConfigFile, "__scop_config_file");
-
-
-  std::array<Value*, 1> callArgs{{configFilePath}};
 
   // -- actual call to init_profiling
-  CallInst* voidPtrCall = builder.CreateCall(
-      initProfilingFun,
-      callArgs,
-      "CtxPtr");
-  builder.CreateStore(voidPtrCall, profilingContextPtr, false);
+  builder.CreateCall(initProfilingFun, {});
   builder.CreateRetVoid();
 
   // Add this function to global llvm constructors
-  appendToGlobalCtors(M, prepareContextFun, 0);
-
-  return profilingContextPtr;
+  appendToGlobalCtors(M, callInitProfilingFun, 0);
 }
 
 
-void createFinishProfilingCall(Module& M,
-                               GlobalVariable* ProfilingContext,
-                               llvm::StringRef OutputFilePath) {
+void createFinishProfilingCall(Module& M) {
 
   IRBuilder<> builder{M.getContext()};
 
-  std::array<Type *, 2> finishProfilingArgs{
-    {ProfilingContext->getValueType(), builder.getInt8Ty()->getPointerTo()}
-  };
-
   // create declaration of finish_profiling function
   FunctionType *finishProfilingType = FunctionType::get(
-      builder.getVoidTy(), finishProfilingArgs, false);
+      builder.getVoidTy(), {}, false);
   M.getOrInsertFunction(FINISH_PROFILING_FUN_NAME, finishProfilingType);
   Function *finishProfilingFun = M.getFunction(FINISH_PROFILING_FUN_NAME);
 
@@ -145,16 +106,11 @@ void createFinishProfilingCall(Module& M,
       "__finish_scop_profiling",
       &M);
 
-
   BasicBlock *finishBody = BasicBlock::Create(
       M.getContext(), "body", callFinishFun);
   builder.SetInsertPoint(finishBody);
 
-  Value* outputFilePathVal = builder.CreateGlobalStringPtr(
-      OutputFilePath, "__scop_output_file_path");
-
-  llvm::Value* loadedCtx = builder.CreateLoad(ProfilingContext, "CtxPtr");
-  builder.CreateCall(finishProfilingFun, {loadedCtx, outputFilePathVal});
+  builder.CreateCall(finishProfilingFun, {});
   builder.CreateRetVoid();
 
   // Add this function to global llvm destructors
@@ -169,9 +125,6 @@ Value* createStartProfilingCall(
     llvm::ArrayRef<std::string> ParameterNames,
     llvm::ArrayRef<Value*> ParameterValues,
     int ScopNumber) {
-
-  GlobalVariable *ProfilingContext = M.getGlobalVariable(PROFILING_CONTEXT_VAR_NAME);
-  assert(ProfilingContext && "Global variable with profiling context  should be available in the module");
 
   LLVMContext& context = M.getContext();
   IRBuilder<> builder{context};
@@ -226,15 +179,13 @@ Value* createStartProfilingCall(
   }
 
   // -- prepare arguments
-  Value* loadedCtxArg = builder.CreateLoad(ProfilingContext, "CtxPtr");
   Value* regionNameArg = builder.CreateGlobalStringPtr(
       RegionName, formatv("__scop_{0}_region_name", ScopNumber));
   ConstantInt* paramCountArg = builder.getInt32(ParameterNames.size());
   paramCountArg->setName("param_count");
   Value* ptrToNamesArg = builder.CreateConstGEP2_32(namesArrTy, paramNamesVar, 0, 0);
   Value* ptrToValuesArg = builder.CreateConstGEP2_32(valuesArrTy, paramValuesVar, 0, 0);
-  std::array<Value*, 5> callArgs{{loadedCtxArg,
-                                  regionNameArg,
+  std::array<Value*, 4> callArgs{{regionNameArg,
                                   paramCountArg,
                                   ptrToNamesArg,
                                   ptrToValuesArg}};
@@ -251,9 +202,6 @@ void createStopProfilingCall(
     llvm::BasicBlock& ScopExit,
     llvm::Value* RegionNamePtr) {
 
-  GlobalVariable *ProfilingContext = M.getGlobalVariable(PROFILING_CONTEXT_VAR_NAME);
-  assert(ProfilingContext && "Global variable with profiling context  should be available in the module");
-
   LLVMContext& context = M.getContext();
   IRBuilder<> builder{context};
   builder.SetInsertPoint(&ScopExit, ScopExit.getFirstInsertionPt());
@@ -262,8 +210,7 @@ void createStopProfilingCall(
   Function* stop_scopFun = M.getFunction(STOP_SCOP_FUN_NAME);
   assert(stop_scopFun && "stop_scop function has to be declared in the module");
 
-  Value* loadedCtxArg = builder.CreateLoad(ProfilingContext, "CtxPtr");
-  std::array<Value*, 2> callArgs{{loadedCtxArg, RegionNamePtr}};
+  std::array<Value*, 1> callArgs{{RegionNamePtr}};
 
   builder.CreateCall(stop_scopFun, callArgs);
 }
