@@ -128,7 +128,7 @@ Value* createStartProfilingCall(
 
   LLVMContext& context = M.getContext();
   IRBuilder<> builder{context};
-  builder.SetInsertPoint(&ScopEntry, --ScopEntry.end());
+  builder.SetInsertPoint(&ScopEntry, ScopEntry.getFirstInsertionPt());
 
   assert(ParameterNames.size() == ParameterValues.size() &&
          "The number of parameter names and their values has to be the same");

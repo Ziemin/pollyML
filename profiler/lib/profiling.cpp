@@ -121,6 +121,11 @@ extern "C" void start_scop(char *region_name, int param_count,
   for (int i = 0; i < param_count; i++) {
     parameters.emplace_back(parameter_names[i], parameter_values[i]);
   }
+  if (ctx->flush_cache) {
+    DEBUG_PRINT(
+      std::cerr << "Flushing cache of size " << ctx->cache_size << " KB \n");
+    flush_cache(ctx->cache_size);
+  }
   ctx->statistics->startProfiling(region_name, std::move(parameters));
 }
 
@@ -128,11 +133,6 @@ extern "C" void start_scop(char *region_name, int param_count,
 ///
 /// @param region_name  The name of the region being profiled
 extern "C" void stop_scop(char *region_name) {
-  if (ctx->flush_cache) {
-    DEBUG_PRINT(
-      std::cerr << "Flushing cache of size " << ctx->cache_size << " KB \n");
-    flush_cache(ctx->cache_size);
-  }
   ctx->statistics->stopProfiling(region_name);
 }
 

@@ -76,7 +76,10 @@ bool ScopProfiling::runOnScop(Scop &S) {
       M, *ScopEntry, regionName, ParameterNames, ParameterValues, scopCount);
 
   // -- Call stop_scop profiling function
-  BasicBlock *ScopExit = S.getExit();
+  BasicBlock *ScopExit = S.getExitingBlock();
+  if (ScopExit == nullptr) {
+    ScopExit = S.getExit();
+  }
   codegen::createStopProfilingCall(M, *ScopExit, RegionNamePtr);
 
   scopCount++;

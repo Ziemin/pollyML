@@ -116,6 +116,8 @@ public:
 
       json scop_results = json::array();
       json parameter_names = json::array();
+      assert(scop_params.size() == scop_durations.size()
+             && "The number of Scop Starts and Stops should be the same!");
 
       const size_t count = scop_durations.size();
       for (size_t i = 0; i < count; i++) {
