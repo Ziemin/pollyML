@@ -68,7 +68,7 @@ bool ScopProfiling::runOnScop(Scop &S) {
       ParameterNames.push_back(std::move(paramName));
     } else {
       DEBUG(errs() << "Parameter " << paramName << " is not SCEVUnknown. "
-                   << "Not adding it to the list!");
+                   << "Not adding it to the list!\n");
     }
   }
   Module &M = *ScopEntry->getModule();

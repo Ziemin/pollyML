@@ -63,7 +63,7 @@ ProfilingContext::ProfilingContext()
   DEBUG_PRINT(std::cerr << "Profiling initialization" << std::endl);
 
   // read config file
-  const char* configuration_file_env = std::getenv("SCOP_PROFILING_CONFIG");
+  const char* configuration_file_env = std::getenv("SCOP_PROFILER_CONFIG");
   std::string_view configuration_file;
   if (configuration_file_env != nullptr) {
     configuration_file = DEFAULT_CONFIG;

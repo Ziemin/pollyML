@@ -28,20 +28,6 @@ using namespace pollyML;
 
 #define DEBUG_TYPE "ProfilingInitializer"
 
-static cl::opt<std::string>
-    ProfilingJsonOutputFile("pollyML-profiling-json-out-path",
-                            cl::desc("The path to save the json file with profiling results."),
-                            cl::Hidden, cl::value_desc("file path"), cl::ValueRequired,
-                            cl::init("stats.json"), cl::cat(PollyMLCategory));
-
-static cl::opt<std::string>
-    ProfilingConfigFile("pollyML-config-json-file",
-                         cl::desc("Path to json with the configuration of"
-                                  " the profiler"),
-                         cl::Hidden, cl::ValueRequired,
-                         cl::init("profiler_config.json"),
-                         cl::cat(PollyMLCategory));
-
 char ProfilingInitializer::ID = 0;
 
 // We should not inject more calls to profiling library than just one

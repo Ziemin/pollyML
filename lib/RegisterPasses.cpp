@@ -10,9 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// TODO - we want to inject pollyML optimization passes somewhere in
-// between polly passes depending on the provided configuration.
-
 #include "pollyML/RegisterPasses.h"
 #include "pollyML/ScopProfiling.h"
 #include "pollyML/ProfilingInitializer.h"
@@ -33,6 +30,7 @@
 #include "polly/ScopInfo.h"
 #include "polly/Simplify.h"
 #include "polly/Support/DumpModulePass.h"
+#include "polly/ForwardOpTree.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -101,6 +99,11 @@ static void registerPollyMLPasses(
   polly::registerCanonicalicationPasses(PM);
 
   PM.add(polly::createScopDetectionWrapperPassPass());
+  PM.add(polly::createScopInfoRegionPassPass());
+  PM.add(polly::createSimplifyPass(0));
+  PM.add(polly::createForwardOpTreePass());
+  PM.add(polly::createDeLICMPass());
+  PM.add(polly::createSimplifyPass(1));
   PM.add(polly::createPruneUnprofitablePass());
 
   PM.add(pollyML::createScopProfilingPass());
