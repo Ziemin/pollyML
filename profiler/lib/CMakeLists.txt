@@ -9,3 +9,7 @@ target_link_libraries(ScopProfiler
     ${PAPI_LIBRARIES}
     LLVMCore
   )
+install(TARGETS ScopProfiler
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
