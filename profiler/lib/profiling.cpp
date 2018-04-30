@@ -65,7 +65,7 @@ ProfilingContext::ProfilingContext()
   // read config file
   const char* configuration_file_env = std::getenv("SCOP_PROFILER_CONFIG");
   std::string_view configuration_file;
-  if (configuration_file_env != nullptr) {
+  if (configuration_file_env == nullptr) {
     configuration_file = DEFAULT_CONFIG;
   } else {
     configuration_file = configuration_file_env;
@@ -146,10 +146,10 @@ ProfilingContext::~ProfilingContext() {
 
   const char* profiling_output_env = std::getenv("SCOP_PROFILING_OUTPUT");
   std::string_view profiling_output;
-  if (profiling_output != nullptr) {
-    profiling_output = profiling_output_env;
-  } else {
+  if (profiling_output_env == nullptr) {
     profiling_output = DEFAULT_OUTPUT;
+  } else {
+    profiling_output = profiling_output_env;
   }
   json data = statistics->serializeToJson();
 
