@@ -3,7 +3,7 @@ set_target_properties(ScopProfilerUnitTests PROPERTIES FOLDER "PollyML - ScopPro
 
 function(add_scop_profiler_unittest test_name)
   add_unittest(ScopProfilerUnitTests ${test_name} ${ARGN})
-  target_link_libraries(${test_name}
+  target_link_libraries(${test_name} PRIVATE
     ScopProfiler
   )
 endfunction()
