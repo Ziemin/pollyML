@@ -7,7 +7,8 @@ add_library(PollyMLCore OBJECT
   ProfilingInitializer.cpp
   RegisterPasses.cpp
   ProfilingCodegen.cpp
-  ScopGraphInfo.cpp)
+  ScopGraphInfo.cpp
+  JsonExporter.cpp)
 
 set_target_properties(PollyMLCore PROPERTIES FOLDER "PollyML")
 

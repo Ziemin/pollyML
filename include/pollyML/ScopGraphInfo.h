@@ -15,6 +15,10 @@
 
 #include "polly/ScopPass.h"
 
+namespace polly {
+  class Dependences;
+}
+
 namespace pollyML {
 
 class ScopGraphInfo : public polly::ScopPass {
@@ -22,7 +26,7 @@ class ScopGraphInfo : public polly::ScopPass {
 public:
   static char ID;
 
-  ScopGraphInfo() : polly::ScopPass(ID) {}
+  ScopGraphInfo() : polly::ScopPass(ID), D(nullptr) {}
 
   bool runOnScop(polly::Scop &S) override;
 
@@ -32,12 +36,11 @@ public:
 
   using polly::ScopPass::doFinalization;
   bool doFinalization(llvm::Module &) override {
-    scopCount = 0;
     return true;
   }
 
 private:
-  int scopCount = 0;
+  const polly::Dependences* D;
 };
 
 llvm::Pass *createScopGraphInfoPass();

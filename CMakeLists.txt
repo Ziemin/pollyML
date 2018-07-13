@@ -56,6 +56,7 @@ add_subdirectory(lib)
 add_subdirectory(test)
 add_subdirectory(unittests)
 add_subdirectory(profiler)
+add_subdirectory(optimizer)
 
 # Add target to check formatting of pollyML files (Copied from Polly)
 file(GLOB_RECURSE files *.h lib/*.cpp lib/*.c tools/*.cpp tools/*.c tools/*.h unittests/*.cpp)

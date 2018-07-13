@@ -13,6 +13,7 @@
 #include "pollyML/RegisterPasses.h"
 #include "pollyML/ScopProfiling.h"
 #include "pollyML/ScopGraphInfo.h"
+#include "pollyML/JsonExporter.h"
 #include "pollyML/ProfilingInitializer.h"
 #include "pollyML/Options.h"
 
@@ -64,7 +65,6 @@ namespace pollyML {
 void initializePollyMLPasses(PassRegistry &Registry) {
   initializeCodeGenerationPass(Registry);
 
-  initializeScopGraphInfoPass(Registry);
   initializeProfilingInitializerPass(Registry);
   initializeScopProfilingPass(Registry);
 
@@ -87,6 +87,9 @@ void initializePollyMLPasses(PassRegistry &Registry) {
   initializeSimplifyPass(Registry);
   initializeDumpModulePass(Registry);
   initializePruneUnprofitablePass(Registry);
+
+  initializeScopGraphInfoPass(Registry);
+  initializeScopJsonExporterPass(Registry);
 }
 
 static void registerPollyMLPasses(
@@ -108,6 +111,7 @@ static void registerPollyMLPasses(
   PM.add(polly::createSimplifyPass(1));
   PM.add(polly::createPruneUnprofitablePass());
   PM.add(pollyML::createScopGraphInfoPass());
+  PM.add(pollyML::createScopJsonExporterPass());
 
   PM.add(pollyML::createScopProfilingPass());
 

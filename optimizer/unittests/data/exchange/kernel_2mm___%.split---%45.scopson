@@ -1,0 +1,145 @@
+{
+    "arrays": [
+        {
+            "name": "MemRef0",
+            "sizes": [
+                "*",
+                "900"
+            ],
+            "type": "double"
+        },
+        {
+            "name": "MemRef1",
+            "sizes": [
+                "*",
+                "1100"
+            ],
+            "type": "double"
+        },
+        {
+            "name": "MemRef2",
+            "sizes": [],
+            "type": "double"
+        },
+        {
+            "name": "MemRef3",
+            "sizes": [
+                "*",
+                "900"
+            ],
+            "type": "double"
+        },
+        {
+            "name": "MemRef4",
+            "sizes": [
+                "*",
+                "1200"
+            ],
+            "type": "double"
+        },
+        {
+            "name": "MemRef5",
+            "sizes": [],
+            "type": "double"
+        },
+        {
+            "name": "MemRef6",
+            "sizes": [
+                "*",
+                "1200"
+            ],
+            "type": "double"
+        }
+    ],
+    "context": "[p_0, p_1, p_2, p_3] -> {  : -2147483648 <= p_0 <= 2147483647 and -2147483648 <= p_1 <= 2147483647 and -2147483648 <= p_2 <= 2147483647 and -2147483648 <= p_3 <= 2147483647 }",
+    "dependences": {
+        "RAW": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> Stmt18[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_3 and 0 <= o2 < p_1; Stmt6[i0, i1, i2] -> Stmt18[i0, o1, i1] : 0 <= i0 < p_0 and 0 <= i1 < p_1 and 0 <= i2 < p_2 and 0 <= o1 < p_3; Stmt4[i0, i1] -> Stmt6[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_1 and 0 <= o2 < p_2; Stmt4[i0, i1] -> Stmt18[i0, o1, i1] : p_2 <= 0 and 0 <= i0 < p_0 and 0 <= i1 < p_1 and 0 <= o1 < p_3 }",
+        "RED": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> Stmt18[i0, i1, 1 + i2] : 0 <= i0 < p_0 and 0 <= i1 < p_3 and 0 <= i2 <= -2 + p_1; Stmt6[i0, i1, i2] -> Stmt6[i0, i1, 1 + i2] : 0 <= i0 < p_0 and 0 <= i1 < p_1 and 0 <= i2 <= -2 + p_2 }",
+        "TC_RED": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> Stmt18[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_3 and ((i2 >= 0 and i2 < o2 < p_1) or (i2 < p_1 and 0 <= o2 < i2)); Stmt6[i0, i1, i2] -> Stmt6[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_1 and ((i2 >= 0 and i2 < o2 < p_2) or (i2 < p_2 and 0 <= o2 < i2)) }",
+        "WAR": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> Stmt18[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_3 and 0 <= o2 < p_1 }",
+        "WAW": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> Stmt18[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_3 and 0 <= o2 < p_1; Stmt4[i0, i1] -> Stmt6[i0, i1, o2] : 0 <= i0 < p_0 and 0 <= i1 < p_1 and 0 <= o2 < p_2 }"
+    },
+    "name": "%.split---%45",
+    "statements": [
+        {
+            "accesses": [
+                {
+                    "kind": "write",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt4[i0, i1] -> MemRef0[i0, i1] }"
+                }
+            ],
+            "domain": "[p_0, p_1, p_2, p_3] -> { Stmt4[i0, i1] : 0 <= i0 < p_0 and 0 <= i1 < p_1 }",
+            "name": "Stmt4",
+            "schedule": "[p_0, p_1, p_2, p_3] -> { Stmt4[i0, i1] -> [0, i0, i1, 0, 0] }"
+        },
+        {
+            "accesses": [
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] -> MemRef1[i0, i2] }"
+                },
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] -> MemRef2[] }"
+                },
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] -> MemRef3[i2, i1] }"
+                },
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] -> MemRef0[i0, i1] }"
+                },
+                {
+                    "kind": "write",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] -> MemRef0[i0, i1] }"
+                }
+            ],
+            "domain": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] : 0 <= i0 < p_0 and 0 <= i1 < p_1 and 0 <= i2 < p_2 }",
+            "name": "Stmt6",
+            "schedule": "[p_0, p_1, p_2, p_3] -> { Stmt6[i0, i1, i2] -> [0, i0, i1, 1, i2] }"
+        },
+        {
+            "accesses": [
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> MemRef4[i0, i1] }"
+                },
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> MemRef5[] }"
+                },
+                {
+                    "kind": "write",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> MemRef4[i0, i1] }"
+                }
+            ],
+            "domain": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] : 0 <= i0 < p_0 and 0 <= i1 < p_3 }",
+            "name": "Stmt16",
+            "schedule": "[p_0, p_1, p_2, p_3] -> { Stmt16[i0, i1] -> [1, i0, i1, 0, 0] }"
+        },
+        {
+            "accesses": [
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> MemRef0[i0, i2] }"
+                },
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> MemRef6[i2, i1] }"
+                },
+                {
+                    "kind": "read",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> MemRef4[i0, i1] }"
+                },
+                {
+                    "kind": "write",
+                    "relation": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> MemRef4[i0, i1] }"
+                }
+            ],
+            "domain": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] : 0 <= i0 < p_0 and 0 <= i1 < p_3 and 0 <= i2 < p_1 }",
+            "name": "Stmt18",
+            "schedule": "[p_0, p_1, p_2, p_3] -> { Stmt18[i0, i1, i2] -> [1, i0, i1, 1, i2] }"
+        }
+    ]
+}
