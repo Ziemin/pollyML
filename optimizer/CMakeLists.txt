@@ -9,6 +9,12 @@ find_package(FMT REQUIRED)
 include_directories(fmt::fmt)
 link_directories(fmt::fmt)
 
+# Boost
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost REQUIRED COMPONENTS graph)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
 # check_include_file("range/v3/all.hpp" HAVE_RANGE_V3)
 # if(NOT HAVE_RANGE_V3)
 #   message(FATAL_ERROR "range-v3 not found")

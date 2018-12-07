@@ -7,7 +7,7 @@ set_target_properties(PollyMLOptimizer PROPERTIES FOLDER "PollyMLOptimizer")
 add_dependencies(PollyMLOptimizer Polly)
 
 target_link_libraries(PollyMLOptimizer
-    # ${Boost_LIBRARIES}
+    ${Boost_LIBRARIES}
     fmt::fmt
     Polly
   )
